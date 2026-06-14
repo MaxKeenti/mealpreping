@@ -1,103 +1,84 @@
+# Mealpreping — Implementation Plan (V1)
 
-
-# Mealpreping — Implementation Plan
+> **Revised 2026-06-13** after a full design interview. See
+> [`DECISIONS.md`](./DECISIONS.md) for the decision record (D1–D23) and rationale.
+> The project direction shifted from a desktop planner to a **mobile-first,
+> installable PWA**. Git history preserves the original plan.
 
 ## 1. Project direction
 
-Mealpreping is a practical meal-prep planner focused on cheap, nutritious weight gain for someone becoming independent in Mexico City.
+Mealpreping is a practical meal-prep planner focused on cheap, nutritious weight
+gain for someone becoming independent in Mexico City.
 
-The first version should avoid unnecessary complexity. The goal is to build a useful local-first app that helps generate weekly meal plans, shopping lists, and portion suggestions based on the user’s profile, appetite, budget, and available appliances.
+The first version avoids unnecessary complexity. The goal is a useful,
+**local-first, mobile-first** app that helps generate weekly meal plans, shopping
+lists, and portion suggestions based on the user's profile, appetite, budget, and
+available appliances — usable on a phone, on the go, and offline.
 
-## 2. Recommended MVP stack
+## 2. MVP stack
 
 ```txt
-Framework: SvelteKit
-Language: TypeScript
-Styling: Tailwind CSS or vanilla CSS with design tokens
-Deployment: Vercel
-Persistence: LocalStorage
+Framework:      SvelteKit (Svelte 5, runes)          [D2]
+Rendering:      Static-first — adapter-static          [D1]
+Language:       TypeScript
+Styling:        Vanilla CSS + design tokens
+                (iOS/macOS "liquid glass" aesthetic)   [D3]
+Delivery:       Installable PWA (manifest + SW)         [D4]
+i18n:           Paraglide JS (English-only in V1)       [D20]
+Persistence:    LocalStorage (single versioned key)     [D17]
+Testing:        Vitest (logic units)                    [D22]
+Deployment:     Vercel (static)
 Package manager: pnpm
-Data source: local TypeScript files / JSON
+Data source:    local TypeScript files
 ```
 
-## 3. Why this stack
+## 3. Architecture
 
-### SvelteKit
-
-SvelteKit is a good fit because this project is likely to become more interactive than a simple content site. The app may eventually include calculators, saved plans, portion sliders, grocery lists, user preferences, and progress tracking.
-
-Use SvelteKit instead of Astro for the MVP because the core value is interactivity, not just publishing static guide content.
-
-### TypeScript
-
-TypeScript should be used from the beginning because the app will rely heavily on structured data:
-
-- foods
-- meals
-- appliances
-- nutritional values
-- user goals
-- shopping-list quantities
-- meal-plan rules
-
-Strong typing will make the meal generation logic safer and easier to extend.
-
-### Vercel
-
-Vercel is the best deployment target for the MVP because it is simple, has good GitHub integration, and works well for SvelteKit apps.
-
-Use Railway later only if the app needs a persistent backend, background workers, cron jobs, or grocery price scraping.
-
-### LocalStorage
-
-The MVP should not require accounts or a database. LocalStorage is enough for saving:
-
-- user profile
-- calorie target
-- appliance selection
-- budget setting
-- preferred meals
-- generated weekly plan
-
-A database can be added later when cross-device sync or user accounts become necessary.
+- **Static-first (D1).** Prerender `/` and `/guide`; app pages run client-side
+  (`ssr = false`) because they read LocalStorage. No server runtime; Vercel serves
+  static assets.
+- **Mobile-first PWA (D3, D4).** The primary device is a phone. The app installs
+  to the home screen, launches chromeless, and works offline (precached bundle) —
+  important for using the shopping list in a store with bad signal.
+- **Liquid-glass design (D3).** Translucent frosted surfaces (`backdrop-filter`),
+  rounded depth, light/dark adaptive, SF system font, generous touch targets,
+  driven by CSS design tokens. No Tailwind; no component framework.
+- **Svelte 5 runes (D2).** Shared and persisted state lives in `.svelte.ts`
+  modules.
 
 ## 4. MVP principles
 
 1. Build a useful personal tool before building a platform.
-2. Avoid authentication in the first version.
-3. Keep data local and editable.
+2. No authentication, no database in V1.
+3. Keep data local, editable, and **offline-available**.
 4. Make the app work without external APIs.
-5. Structure the app so Codex and future contributors can expand it easily.
-6. Prioritize practical meal prep over calorie-counting perfection.
+5. **Mobile-first and touch-first** — assume the user is on a phone, on the go.
+6. Keep meal/nutrition logic pure, typed, and unit-tested so it can be extended
+   safely.
+7. Prioritize practical meal prep over calorie-counting perfection — numbers are
+   **estimates**.
 
-## 5. Core MVP features
+## 5. Core V1 features
 
-### User profile
+### User profile (D6, D10, D12, D13)
 
-Inputs:
+Collected via a short first-run **onboarding wizard**; editable later in
+**Settings** (gear icon on Home).
 
-- height
-- weight
-- goal: gain weight, maintain, or cut later
-- appetite level
-- activity level
-- available appliances
-- weekly budget estimate
+Inputs: height, weight, goal (gain/maintain/cut), appetite, activity level,
+**weekend appliances**, **weekday appliances**, meals/day, snacks on/off, budget
+dial, optional weekly budget (MXN, stored only).
 
-Outputs:
+Outputs: starting calorie target (range), starting protein target (range),
+suggested meal-prep intensity.
 
-- starting calorie target
-- starting protein target
-- suggested meal-prep intensity
+### Calorie & protein targets (D12, D13)
 
-### Calorie and protein target calculator
-
-The app should estimate:
-
-- daily calories
-- daily protein target
-- weekly weight-gain goal
-- adjustment recommendation if weight does not increase
+- Daily calories — weight-based kcal/kg heuristic, output as a **range**,
+  calibrated so the 69 kg reference lands at 2,800–3,200 kcal. No age/sex needed.
+- Daily protein — `weightKg × 1.6–2.0 g`, output as a range (reference 110–140 g).
+- Adjustment — a manual **"+300 / +500 kcal"** control for the not-gaining rule
+  (no weight logging in V1).
 
 For the initial user profile:
 
@@ -109,355 +90,196 @@ Protein target: 110–140 g/day
 Goal: gain 0.25–0.5 kg/week
 ```
 
-### Appliance-based meal planner
+### Appliance-based, three-tier meal model (D8, D10)
 
-The planner should generate meals based on the user’s available appliances.
-
-Current appliance constraints:
+Two appliance contexts:
 
 ```txt
-Weekend appliances:
-- blender
-- electric rice cooker
-- small oven
-- air fryer
-
-Weekday appliances:
-- microwave oven
-- electric grill
+Weekend appliances: blender, electric rice cooker, small oven, air fryer
+Weekday appliances: microwave oven, electric grill
 ```
 
-The app should distinguish between:
+The model has three tiers:
 
-- meals that can be cooked in bulk on weekends
-- meals that can be reheated during the week
-- meals that can be assembled quickly with microwave + electric grill
+- **FoodItem** — a raw ingredient (nutrition, serving, cost tier, appliances).
+- **PrepComponent** — a batch-cooked module made on the weekend (cooked rice,
+  cooked lentils, cooked chicken, roasted potatoes, salsa roja, chipotle sauce…),
+  with a raw→cooked yield factor and storage notes.
+- **Meal** — an assembly of prep components + direct ingredients, tagged with the
+  weekday appliances needed to assemble and whether it reheats well.
 
-### Meal prep generator
+The weekend prep checklist and shopping list are **derived** from the week's
+meals — not hand-authored.
 
-The generator should create a weekly plan using modules instead of rigid identical meals.
+### Meal generator (D14)
 
-Core formula:
+Curated assembler, not an optimizer:
 
 ```txt
 Carb base + protein anchor + sauce + calorie booster + fruit/vegetable
 ```
 
-Example modules:
+1. Pick a weekly **prep set** by appetite/budget/appliances (default: rice +
+   lentils + chicken + potatoes + 2 sauces).
+2. Assemble **varied** daily meals from prep components + direct ingredients under
+   appliance/reheat constraints (no two days identical).
+3. **Scale portions** to land in the target ranges.
+4. **Seeded** randomness — "Regenerate" reshuffles; a saved plan is reproducible.
 
-- rice
-- lentils or beans
-- chicken thighs/legs
-- potatoes
-- tortillas
-- oats
-- salsa roja
-- creamy chipotle sauce
-- peanut butter
-- whole milk
+### Shopping list generator (D9, D16)
 
-### Shopping list generator
+Aggregates raw foods (from prep components, accounting for yield, + direct
+ingredients) across the week into grams, then renders friendly units. Grouped by a
+dedicated `shoppingCategory`:
 
-The app should generate a weekly grocery list based on the selected plan.
+```txt
+core staples · proteins · dairy · fruits · vegetables · sauces/flavor · pantry/backup
+```
 
-It should group items by category:
+### Portion scaling (D15)
 
-- core staples
-- proteins
-- dairy
-- fruits
-- vegetables
-- sauces/flavor
-- emergency meals
+- Meals/day and snacks on/off are **generation inputs**.
+- A global **portion multiplier** fine-tunes all portions after generation.
+- The manual **+kcal bump** raises the target and re-scales.
 
-### Portion scaling
+### Weekend prep checklist & daily templates (D8, D21)
 
-The app should allow increasing or decreasing portion sizes based on:
+Derived **in-app screens** (not print artifacts): batched prep quantities by
+appliance for the weekend, and per-day assembly templates for weekdays.
 
-- appetite
-- weight trend
-- budget
-- number of meals per day
-- whether snacks are included
+> **Not in V1:** print/export (all-digital; the offline app replaces paper),
+> MXN budget math, weight logging, accounts/sync. See roadmap.
 
-### Print/export mode
+## 6. Information architecture & pages (D5, D6)
 
-The app should support printing or exporting:
+Shell: a Home dashboard with an iOS-style **bottom tab bar**.
 
-- weekly plan
-- shopping list
-- weekend prep checklist
-- daily meal templates
+- **`/` — Home** — today's targets, today's meals, quick actions (Regenerate,
+  open Shopping). Gear → Settings. First launch with no profile routes to
+  onboarding.
+- **`/planner` — Plan** — the generated weekly plan; portion controls; prep
+  checklist.
+- **`/shopping-list` — Shopping** — grouped ingredients, weekly amounts,
+  checkboxes (offline-friendly for in-store use).
+- **`/guide` — Guide** — the ported guide content (core system, weekend prep,
+  weekday meals, food safety, adjustment rules).
+- **`/settings`** — edit profile, appliances, budget dial, meals/day, snacks,
+  language.
+- **Onboarding** — first-run wizard that computes targets and lands on Home.
 
-## 6. Suggested project structure
+## 7. Data model
+
+Full TypeScript sketch lives in [`DECISIONS.md`](./DECISIONS.md). Summary:
+
+- `FoodItem` — `category` (drives generator slots) **and** `shoppingCategory`
+  (drives aisle grouping); `costTier: 1|2|3`; per-100g nutrition;
+  `defaultServingGrams`; optional `householdUnit`; `appliances` (empty = none).
+- `PrepComponent` — `ingredients[]` (rawGrams), `yieldFactor`, `appliance`,
+  `reheatsWell`, `storageNotes`.
+- `Meal` — `components[]` (prep or food refs + grams), `weekdayAppliances`,
+  `reheatsWell`, `weekendPrepRequired`, `isEmergency?`.
+- `UserProfile` — height, weight, goal, appetite, activity, **weekendAppliances**,
+  **weekdayAppliances**, mealsPerDay, includeSnacks, portionMultiplier,
+  budgetDial, weeklyBudgetMxn?, locale.
+- `WeeklyPlan` — `seed`, `prepSet[]`, `meals: PlannedMeal[]`, `targets`.
+- `AppState` — `schemaVersion`, `profile`, `plan` (the single persisted blob).
+
+`Appliance` enum drops `'none'`.
+
+## 8. Logic modules (D12–D16)
+
+```txt
+src/lib/logic/
+  targets.ts        calorie + protein ranges from the profile
+  generator.ts      curated assembler (seeded), appliance/reheat-aware
+  shoppingList.ts   aggregate raw foods -> grouped, friendly units
+  prepChecklist.ts  derive weekend batch quantities by appliance
+  units.ts          grams <-> household units, raw<->cooked yields
+  portions.ts       global multiplier, +kcal bump
+```
+
+All pure and unit-tested with Vitest (D22).
+
+## 9. Suggested project structure
 
 ```txt
 mealpreping/
   src/
     lib/
-      data/
-        foods.ts
-        meals.ts
-        appliances.ts
-        shopping.ts
-      logic/
-        calories.ts
-        mealGenerator.ts
-        shoppingList.ts
-        portions.ts
-      components/
-        MealCard.svelte
-        GroceryList.svelte
-        CalorieTarget.svelte
-        ApplianceSelector.svelte
-        WeekendPrepChecklist.svelte
-        DailyMealTemplate.svelte
+      data/        foods.ts  prepComponents.ts  meals.ts  appliances.ts
+      logic/       targets.ts generator.ts shoppingList.ts
+                   prepChecklist.ts units.ts portions.ts
+      state/       appState.svelte.ts   (runes + single-key persistence)
+      i18n/        Paraglide output + config
+      components/  BottomTabBar.svelte GlassCard.svelte MealCard.svelte
+                   GroceryList.svelte CalorieTarget.svelte
+                   ApplianceSelector.svelte WeekendPrepChecklist.svelte
+                   DailyMealTemplate.svelte
     routes/
-      +page.svelte
-      planner/
-        +page.svelte
-      shopping-list/
-        +page.svelte
-      guide/
-        +page.svelte
+      +layout.svelte         (tab shell + onboarding gate)
+      +page.svelte           (Home dashboard)
+      planner/+page.svelte
+      shopping-list/+page.svelte
+      guide/+page.svelte
+      settings/+page.svelte
+    service-worker.ts
+  messages/                  (Paraglide catalogs: en.json)
+  static/manifest.webmanifest
   docs/
     IMPLEMENTATION_PLAN.md
+    DECISIONS.md
+    CONTEXT.md
 ```
 
-## 7. Data model ideas
+## 10. Feature roadmap
 
-### Food item
-
-```ts
-export type FoodCategory =
-  | 'carb'
-  | 'protein'
-  | 'protein-carb'
-  | 'fat'
-  | 'fruit'
-  | 'vegetable'
-  | 'sauce'
-  | 'dairy';
-
-export type Appliance =
-  | 'none'
-  | 'microwave'
-  | 'electric-grill'
-  | 'rice-cooker'
-  | 'blender'
-  | 'small-oven'
-  | 'air-fryer';
-
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack';
-
-export interface FoodItem {
-  id: string;
-  name: string;
-  category: FoodCategory;
-  cheap: boolean;
-  caloriesPer100g?: number;
-  proteinPer100g?: number;
-  appliances: Appliance[];
-  mealTypes: MealType[];
-  notes?: string;
-}
-```
-
-Example:
-
-```ts
-export const foods: FoodItem[] = [
-  {
-    id: 'oats',
-    name: 'Oats',
-    category: 'carb',
-    cheap: true,
-    proteinPer100g: 13,
-    caloriesPer100g: 389,
-    appliances: ['microwave', 'none'],
-    mealTypes: ['breakfast', 'snack'],
-    notes: 'Cheap, calorie-dense, useful with milk, banana, and peanut butter.'
-  },
-  {
-    id: 'lentils',
-    name: 'Lentils',
-    category: 'protein-carb',
-    cheap: true,
-    proteinPer100g: 9,
-    caloriesPer100g: 116,
-    appliances: ['rice-cooker', 'microwave'],
-    mealTypes: ['lunch', 'dinner'],
-    notes: 'Easier than beans for rice-cooker meal prep.'
-  }
-];
-```
-
-### User profile
-
-```ts
-export interface UserProfile {
-  heightCm: number;
-  weightKg: number;
-  goal: 'gain' | 'maintain' | 'cut';
-  appetite: 'low' | 'medium' | 'high' | 'insatiable';
-  activityLevel: 'low' | 'moderate' | 'high';
-  weeklyBudgetMxn?: number;
-  appliances: Appliance[];
-}
-```
-
-### Meal module
-
-```ts
-export interface MealModule {
-  id: string;
-  name: string;
-  mealType: MealType;
-  carbBase: string[];
-  proteinAnchors: string[];
-  sauces: string[];
-  calorieBoosters: string[];
-  fruitOrVegetable: string[];
-  reheatsWell: boolean;
-  weekendPrepRequired: boolean;
-}
-```
-
-## 8. Initial app pages
-
-### `/`
-
-Landing page explaining the app:
-
-- cheap nutritious meal prep
-- built for real constraints
-- Mexico City-friendly staples
-- weekend prep, weekday reheating
-
-### `/planner`
-
-Main app page:
-
-- profile form
-- appliance selector
-- budget selector
-- generated calorie/protein targets
-- generated weekly meal plan
-- portion adjustment controls
-
-### `/shopping-list`
-
-Shopping list page:
-
-- grouped ingredients
-- weekly amounts
-- optional checkboxes
-- print mode
-
-### `/guide`
-
-Static guide page based on the HTML document already created:
-
-- core system
-- weekend prep workflow
-- weekday meals
-- food safety
-- adjustment rules
-
-## 9. Feature roadmap
-
-### V1 — local-first MVP
-
-- Height, weight, goal input
-- Calorie/protein target calculator
-- Appliance-based meal-prep generator
-- Grocery list generator
-- Weekly plan display
-- Portion scaling
-- Print/export support
-- LocalStorage persistence
+### V1 — local-first, mobile-first MVP
+- Onboarding + profile, calorie/protein target ranges
+- Three-tier appliance-aware meal-prep generator (seeded)
+- Derived weekly plan, prep checklist, and grocery list
+- Portion scaling + manual calorie bump
+- Liquid-glass UI, bottom-tab shell
+- Installable PWA, offline
+- LocalStorage persistence (versioned)
+- Guide ported to `/guide`
+- Vitest logic tests
 
 ### V2 — better planner
-
-- Weekly budget in MXN
-- Food dislikes and preferences
-- Prep-time limits
-- “Only microwave this week” mode
-- Leftovers mode
-- Snack generator
-- Weight trend adjustment
+- Weekly budget in MXN (real cost math + price data)
+- Food dislikes/preferences, prep-time limits
+- "Only microwave this week" mode, leftovers mode, snack generator
+- es-MX locale (Paraglide already wired)
+- JSON export/import (backup + device transfer)
+- Weight-trend-aware adjustment hints
 
 ### V3 — real app
+- Accounts, saved plans, weight tracking, favorites, pantry inventory,
+  shopping history, database-backed sync
 
-- User accounts
-- Saved meal plans
-- Weight tracking
-- Favorite meals
-- Pantry inventory
-- Shopping history
-- Database-backed persistence
+### V4 — Mexico City differentiator
+- Tianguis/supermarket mode, Mexican-staple suggestions, price-aware
+  substitutions, "cheapest protein this week," batch-cooking guides by appliance
 
-### V4 — Mexico City-specific differentiator
+## 11. Development order (D23 — vertical slice first)
 
-- Tianguis/supermarket mode
-- Mexican staple suggestions
-- Price-aware substitutions
-- “Cheapest protein this week” suggestions
-- Batch-cooking guides by appliance
-
-## 10. Future backend options
-
-Do not add a backend in the MVP unless necessary.
-
-When the app needs persistence across devices:
-
-```txt
-Auth: Supabase Auth, Clerk, Auth.js, or Lucia-style custom auth
-Database: Neon Postgres or Supabase Postgres
-ORM: Drizzle
-Deployment: Vercel
-```
-
-When the app needs background jobs:
-
-```txt
-Frontend/App: SvelteKit
-Backend workers: Railway
-Database: Postgres
-Scheduled jobs: Railway cron or external scheduler
-```
-
-Railway becomes useful later for:
-
-- persistent backend services
-- scheduled jobs
-- grocery price checking
-- scraping or ingestion workers
-- heavier APIs
-
-## 11. Development order
-
-Recommended implementation sequence:
-
-1. Create the SvelteKit project with TypeScript.
-2. Add base styling and layout.
-3. Add static data files for foods, meals, appliances, and shopping categories.
-4. Build calorie/protein target logic.
-5. Build the user profile form.
-6. Save profile data to LocalStorage.
-7. Build a simple meal generator.
-8. Build a shopping-list generator.
-9. Add weekly plan display.
-10. Add print/export styles.
-11. Move the existing HTML guide content into the `/guide` route.
-12. Deploy to Vercel.
+1. Scaffold SvelteKit + TS + `adapter-static` + Paraglide + Vitest.
+2. Data types + seed data (~30 foods / ~8 prep / ~20 meals).
+3. Logic + unit tests (targets, generator, shopping, units, portions).
+4. Minimal UI flow: onboarding → Home → Plan → Shopping (basic styling).
+5. Persistence (single-key runes state + migration).
+6. Liquid-glass design system + bottom-tab shell.
+7. PWA (manifest + service worker, offline precache).
+8. Port the guide into `/guide`, restyled and mobile-reflowed.
+9. Deploy to Vercel.
 
 ## 12. Notes for contributors / Codex
 
-- Keep meal data separate from UI components.
-- Keep calculation logic in `src/lib/logic`.
-- Avoid hardcoding meal rules inside Svelte components.
-- Prefer small, focused files over large all-in-one files.
-- Make foods and meals easy to expand.
-- Do not introduce authentication or a database until the MVP proves useful.
-- Prioritize practical cooking constraints over perfect nutrition math.
+- Keep food/meal data separate from UI; keep calculation logic in `src/lib/logic`.
+- Logic is pure and unit-tested — don't hardcode meal rules in components.
+- Respect the three-tier model: ingredients → prep components → meals.
+- Preserve the weekend-prep / weekday-assembly concept and the two appliance sets.
+- Treat nutrition numbers as rough estimates; keep a `source`/`notes` field.
+- Use the original profile as the default example, not the only supported case.
+- All new user-facing strings go through Paraglide (English now, es-MX later).
+- Do not introduce a backend or accounts until the local-first MVP proves useful.
+- Keep `DECISIONS.md` updated when product direction changes.
