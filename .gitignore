@@ -1,5 +1,3 @@
-
-
 # Dependencies
 node_modules/
 .pnpm-store/
@@ -9,14 +7,22 @@ node_modules/
 build/
 dist/
 .vite/
+.output/
 
-# Vercel
+# Adapter / host output
 .vercel/
+.netlify/
+.wrangler/
+
+# Generated i18n output
+src/lib/paraglide/
+project.inlang/cache/
 
 # Environment variables
 .env
 .env.*
 !.env.example
+!.env.test
 
 # Logs
 logs/
@@ -31,6 +37,8 @@ pnpm-debug.log*
 .parcel-cache/
 .eslintcache
 .stylelintcache
+vite.config.js.timestamp-*
+vite.config.ts.timestamp-*
 
 # Testing / coverage
 coverage/
