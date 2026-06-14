@@ -262,15 +262,19 @@ mealpreping/
 
 ## 11. Development order (D23 — vertical slice first)
 
-1. Scaffold SvelteKit + TS + `adapter-static` + Paraglide + Vitest.
-2. Data types + seed data (~30 foods / ~8 prep / ~20 meals).
-3. Logic + unit tests (targets, generator, shopping, units, portions).
-4. Minimal UI flow: onboarding → Home → Plan → Shopping (basic styling).
-5. Persistence (single-key runes state + migration).
-6. Liquid-glass design system + bottom-tab shell.
-7. PWA (manifest + service worker, offline precache).
-8. Port the guide into `/guide`, restyled and mobile-reflowed.
-9. Deploy to Vercel.
+1. ✅ Scaffold SvelteKit + TS + `adapter-static` + Paraglide + Vitest.
+2. ✅ Data types + seed data (~30 foods / ~8 prep / ~20 meals).
+3. ✅ Logic + unit tests (targets, generator, shopping, units, portions).
+4. ✅ Minimal UI flow: onboarding → Home → Plan → Shopping (basic styling).
+5. ✅ Persistence (single-key runes state + migration).
+6. ✅ Liquid-glass shell — **light pass**: design tokens + frosted tab bar/cards,
+   Guide tab, gear → Settings (`/settings`, reusing `ProfileForm`). Full
+   GlassCard/MealCard component system deferred.
+7. ✅ PWA (manifest + service worker, offline precache, app icons).
+8. ✅ Port the guide into `/guide`, restyled and mobile-reflowed.
+9. ⏳ Deploy to Vercel — `vercel.json` (static `build/` + SPA rewrite to
+   `200.html`) committed; **remaining manual step: connect the repo to a Vercel
+   project** in the dashboard to enable Git-integration auto-deploys.
 
 ## 12. Notes for contributors / Codex
 

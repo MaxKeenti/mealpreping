@@ -38,7 +38,10 @@
 <svelte:head><title>Home — Mealpreping</title></svelte:head>
 
 <main class="page">
-	<h1>Today</h1>
+	<header class="home-header">
+		<h1>Today</h1>
+		<a class="gear" href="/settings" aria-label="Settings" title="Settings">⚙</a>
+	</header>
 
 	{#if plan}
 		<section class="card">
@@ -71,6 +74,30 @@
 </main>
 
 <style>
+	.home-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 0.5rem;
+	}
+
+	.gear {
+		display: grid;
+		place-items: center;
+		width: 44px;
+		height: 44px;
+		flex: none;
+		font-size: 1.4rem;
+		line-height: 1;
+		text-decoration: none;
+		color: inherit;
+		border: 1px solid var(--line);
+		border-radius: 50%;
+		background: var(--surface);
+		-webkit-backdrop-filter: var(--blur);
+		backdrop-filter: var(--blur);
+	}
+
 	.meal {
 		display: flex;
 		justify-content: space-between;

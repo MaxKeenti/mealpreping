@@ -1,0 +1,17 @@
+{
+	"name": "Mealpreping",
+	"short_name": "Mealpreping",
+	"description": "Cheap, nutritious weekly meal-prep plans, shopping lists, and portion targets — local-first and offline.",
+	"start_url": "/",
+	"scope": "/",
+	"display": "standalone",
+	"orientation": "portrait",
+	"background_color": "#ffffff",
+	"theme_color": "#22604a",
+	"icons": [
+		{ "src": "/icon.svg", "type": "image/svg+xml", "sizes": "any", "purpose": "any" },
+		{ "src": "/icon-192.png", "type": "image/png", "sizes": "192x192", "purpose": "any" },
+		{ "src": "/icon-512.png", "type": "image/png", "sizes": "512x512", "purpose": "any" },
+		{ "src": "/icon-maskable-512.png", "type": "image/png", "sizes": "512x512", "purpose": "maskable" }
+	]
+}

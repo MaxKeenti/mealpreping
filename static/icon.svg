@@ -1,0 +1,20 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <title>Mealpreping</title>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3a8f63" />
+      <stop offset="1" stop-color="#22604a" />
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" fill="url(#bg)" />
+  <!-- bowl body (lower semicircle), within the maskable safe zone -->
+  <path d="M138 250 A118 118 0 0 0 374 250 Z" fill="#ffffff" />
+  <!-- rim -->
+  <rect x="120" y="240" width="272" height="20" rx="10" fill="#ffffff" />
+  <!-- steam -->
+  <g fill="none" stroke="#ffffff" stroke-width="16" stroke-linecap="round">
+    <path d="M214 196 q-20 -22 0 -44" />
+    <path d="M256 186 q-20 -22 0 -44" />
+    <path d="M298 196 q-20 -22 0 -44" />
+  </g>
+</svg>

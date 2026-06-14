@@ -1,15 +1,23 @@
 /*
- * Bare base styles for the vertical slice (D23). Intentionally not the
- * liquid-glass design system yet — just enough to be legible and tappable.
+ * Light liquid-glass pass (D3, reduced scope): design tokens + frosted surfaces
+ * on cards and the tab bar. The full GlassCard/MealCard component system is
+ * deferred — screens inherit these tokens and the `.card` treatment.
  */
 
 :root {
 	color-scheme: light dark;
 	--gap: 1rem;
-	--radius: 10px;
-	--line: color-mix(in srgb, currentColor 18%, transparent);
-	--muted: color-mix(in srgb, currentColor 60%, transparent);
-	--fill: color-mix(in srgb, currentColor 8%, transparent);
+	--radius: 12px;
+	--radius-lg: 20px;
+	--line: color-mix(in srgb, CanvasText 14%, transparent);
+	--muted: color-mix(in srgb, CanvasText 55%, transparent);
+	--fill: color-mix(in srgb, CanvasText 7%, transparent);
+	--accent: light-dark(oklch(0.6 0.16 255), oklch(0.72 0.15 255));
+	/* Translucent surfaces that the backdrop blur acts on. */
+	--surface: color-mix(in srgb, Canvas 70%, transparent);
+	--surface-strong: color-mix(in srgb, Canvas 82%, transparent);
+	--blur: saturate(180%) blur(20px);
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.08);
 }
 
 * {
@@ -21,6 +29,13 @@ body {
 	font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 	line-height: 1.4;
 	-webkit-text-size-adjust: 100%;
+	min-height: 100dvh;
+	/* Soft ambient wash so the frosted surfaces have something to blur. */
+	background:
+		radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
+		radial-gradient(120% 80% at 0% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%),
+		Canvas;
+	background-attachment: fixed;
 }
 
 h1 {
@@ -56,9 +71,13 @@ h3 {
 
 .card {
 	border: 1px solid var(--line);
-	border-radius: var(--radius);
+	border-radius: var(--radius-lg);
 	padding: var(--gap);
 	margin: 0 0 var(--gap);
+	background: var(--surface);
+	-webkit-backdrop-filter: var(--blur);
+	backdrop-filter: var(--blur);
+	box-shadow: var(--shadow);
 }
 
 button {
@@ -67,7 +86,9 @@ button {
 	font: inherit;
 	border: 1px solid var(--line);
 	border-radius: var(--radius);
-	background: transparent;
+	background: var(--surface);
+	-webkit-backdrop-filter: var(--blur);
+	backdrop-filter: var(--blur);
 	color: inherit;
 	cursor: pointer;
 }
@@ -79,6 +100,14 @@ button:disabled {
 
 button[aria-pressed='true'] {
 	background: var(--fill);
+	font-weight: 600;
+}
+
+/* Accent-filled primary action (e.g. "Generate my plan", "Save"). */
+button.primary {
+	background: var(--accent);
+	border-color: transparent;
+	color: white;
 	font-weight: 600;
 }
 

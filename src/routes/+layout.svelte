@@ -10,7 +10,8 @@
 	const tabs = [
 		{ href: '/', label: 'Home' },
 		{ href: '/planner', label: 'Plan' },
-		{ href: '/shopping-list', label: 'Shopping' }
+		{ href: '/shopping-list', label: 'Shopping' },
+		{ href: '/guide', label: 'Guide' }
 	];
 </script>
 
@@ -36,7 +37,10 @@
 		inset: auto 0 0 0;
 		display: flex;
 		border-top: 1px solid var(--line);
-		background: Canvas;
+		background: var(--surface-strong);
+		-webkit-backdrop-filter: var(--blur);
+		backdrop-filter: var(--blur);
+		padding-bottom: env(safe-area-inset-bottom);
 	}
 
 	.tab-bar a {
@@ -46,10 +50,12 @@
 		text-align: center;
 		text-decoration: none;
 		color: inherit;
+		font-size: 0.9rem;
 	}
 
 	.tab-bar a[aria-current='page'] {
 		font-weight: 700;
+		color: var(--accent);
 		background: var(--fill);
 	}
 </style>

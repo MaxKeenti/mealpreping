@@ -87,6 +87,26 @@ export function completeOnboarding(profile: UserProfile): void {
 	appState.plan = generateWeeklyPlan(profile, { calorieBump: 0 });
 }
 
+/**
+ * Settings edit: save a changed profile and recompute targets/portions. The
+ * existing plan's seed is preserved so the same meals stay in place and only the
+ * numbers rescale (mirrors `setPortionMultiplier`). With no plan yet, generate one.
+ */
+export function updateProfile(profile: UserProfile): void {
+	appState.profile = profile;
+	appState.plan = generateWeeklyPlan(profile, {
+		seed: appState.plan?.seed,
+		calorieBump: appState.calorieBump
+	});
+}
+
+/** "Start over" — clear the profile and plan, returning to onboarding. */
+export function resetAll(): void {
+	appState.profile = null;
+	appState.plan = null;
+	appState.calorieBump = 0;
+}
+
 /** "Regenerate" — reshuffle with a fresh seed, keeping the current +kcal bump. */
 export function regeneratePlan(): void {
 	if (!appState.profile) {
