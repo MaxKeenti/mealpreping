@@ -1,20 +1,55 @@
 <script lang="ts">
-	import type { Pathname } from '$app/types';
-	import { resolve } from '$app/paths';
+	import '../app.css';
 	import { page } from '$app/state';
-	import { locales, localizeHref } from '$lib/paraglide/runtime';
 	import favicon from '$lib/assets/favicon.svg';
+	import { appState } from '$lib/state/appState.svelte';
+	import Onboarding from '$lib/components/Onboarding.svelte';
 
 	let { children } = $props();
+
+	const tabs = [
+		{ href: '/', label: 'Home' },
+		{ href: '/planner', label: 'Plan' },
+		{ href: '/shopping-list', label: 'Shopping' }
+	];
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>
-{@render children()}
 
-<div style="display:none">
-	{#each locales as locale (locale)}
-		<a
-			href={resolve(localizeHref(page.url.pathname, { locale }) as Pathname)}
-		>{locale}</a>
-	{/each}
-</div>
+{#if appState.profile == null}
+	<Onboarding />
+{:else}
+	{@render children()}
+
+	<nav class="tab-bar" aria-label="Primary">
+		{#each tabs as tab (tab.href)}
+			<a href={tab.href} aria-current={page.url.pathname === tab.href ? 'page' : undefined}>
+				{tab.label}
+			</a>
+		{/each}
+	</nav>
+{/if}
+
+<style>
+	.tab-bar {
+		position: fixed;
+		inset: auto 0 0 0;
+		display: flex;
+		border-top: 1px solid var(--line);
+		background: Canvas;
+	}
+
+	.tab-bar a {
+		flex: 1;
+		min-height: 44px;
+		padding: 0.75rem;
+		text-align: center;
+		text-decoration: none;
+		color: inherit;
+	}
+
+	.tab-bar a[aria-current='page'] {
+		font-weight: 700;
+		background: var(--fill);
+	}
+</style>
