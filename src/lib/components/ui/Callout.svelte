@@ -20,7 +20,7 @@
 		border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
 		border-radius: var(--radius);
 		background: color-mix(in srgb, var(--accent) 9%, transparent);
-		box-shadow: inset 0 1px 0 color-mix(in srgb, white 14%, transparent);
+		box-shadow: var(--edge-highlight);
 	}
 
 	.callout :global(:last-child) {

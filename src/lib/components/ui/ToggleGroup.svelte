@@ -78,22 +78,36 @@
 		font: inherit;
 		font-size: var(--text-sm);
 		font-weight: 700;
-		color: inherit;
+		color: var(--muted);
 		border: 1px solid transparent;
 		border-radius: calc(var(--radius) - 4px);
 		background: transparent;
 		cursor: pointer;
+		transition:
+			color 180ms ease,
+			background 180ms ease,
+			box-shadow 180ms ease,
+			transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
 	.toggle:hover {
 		background: var(--fill);
 	}
 
+	.toggle:active {
+		transform: scale(0.96);
+	}
+
 	.toggle[aria-pressed='true'] {
-		background: var(--accent-soft);
-		border-color: color-mix(in srgb, var(--accent) 30%, transparent);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--accent) 22%, transparent),
+			color-mix(in srgb, var(--accent) 12%, transparent)
+		);
 		color: var(--accent);
-		box-shadow: var(--shadow-sm);
+		box-shadow:
+			var(--shadow-sm),
+			inset 0 1px 0 color-mix(in srgb, white 38%, transparent);
 	}
 
 	.toggle:disabled {

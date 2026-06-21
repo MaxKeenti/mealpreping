@@ -17,18 +17,37 @@
 	--radius: 12px;
 	--radius-lg: 20px;
 	--radius-full: 999px;
-	--line: color-mix(in srgb, CanvasText 14%, transparent);
+	--line: color-mix(in srgb, CanvasText 12%, transparent);
 	--muted: color-mix(in srgb, CanvasText 55%, transparent);
 	--fill: color-mix(in srgb, CanvasText 7%, transparent);
 	--accent: light-dark(oklch(0.6 0.16 255), oklch(0.72 0.15 255));
 	--accent-soft: color-mix(in srgb, var(--accent) 14%, transparent);
-	/* Translucent surfaces that the backdrop blur acts on. */
-	--surface: color-mix(in srgb, Canvas 70%, transparent);
-	--surface-strong: color-mix(in srgb, Canvas 82%, transparent);
-	--blur: saturate(180%) blur(20px);
-	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.06), 0 4px 12px rgba(0, 0, 0, 0.06);
-	--shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 10px 30px rgba(0, 0, 0, 0.08);
-	--shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.14);
+
+	/* --- Liquid Glass --------------------------------------------------
+	   Translucent surfaces that the backdrop blur lenses and refracts. */
+	--surface: color-mix(in srgb, Canvas 58%, transparent);
+	--surface-strong: color-mix(in srgb, Canvas 74%, transparent);
+	/* Heavier blur + saturation reads as a thick, light-bending pane. */
+	--blur: saturate(185%) brightness(1.05) blur(26px);
+
+	/* Specular edge: a bright rim along the top lip, a soft inner glow at
+	   the foot, and a faint full outline — light caught in the glass. */
+	--glass-edge: light-dark(0.7, 0.32);
+	--edge-highlight: inset 0 1px 0 0 color-mix(in srgb, white calc(var(--glass-edge) * 100%), transparent),
+		inset 0 0 0 1px color-mix(in srgb, white calc(var(--glass-edge) * 12%), transparent),
+		inset 0 -10px 18px -12px color-mix(in srgb, white calc(var(--glass-edge) * 40%), transparent);
+	/* Diagonal sheen swept across the pane (layer over a surface). */
+	--glass-sheen: linear-gradient(
+		145deg,
+		color-mix(in srgb, white calc(var(--glass-edge) * 26%), transparent) 0%,
+		transparent 34%,
+		transparent 64%,
+		color-mix(in srgb, var(--accent) 8%, transparent) 100%
+	);
+
+	--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05), 0 4px 12px rgba(0, 0, 0, 0.07);
+	--shadow: 0 1px 2px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.1);
+	--shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.16);
 }
 
 * {
@@ -42,12 +61,26 @@ body {
 	line-height: 1.45;
 	-webkit-text-size-adjust: 100%;
 	min-height: 100dvh;
-	/* Soft ambient wash so the frosted surfaces have something to blur. */
+	/* Layered ambient wash so the frosted surfaces have colour to bend. */
 	background:
-		radial-gradient(120% 80% at 100% 0%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 60%),
-		radial-gradient(120% 80% at 0% 100%, color-mix(in srgb, var(--accent) 10%, transparent), transparent 55%),
+		radial-gradient(110% 70% at 100% 0%, color-mix(in srgb, var(--accent) 22%, transparent), transparent 58%),
+		radial-gradient(120% 80% at 0% 100%, color-mix(in srgb, var(--accent) 14%, transparent), transparent 55%),
+		radial-gradient(90% 60% at 50% 120%, color-mix(in srgb, oklch(0.7 0.15 200) 12%, transparent), transparent 60%),
 		Canvas;
 	background-attachment: fixed;
+}
+
+/* Shared specular sheen overlay for glass panes. Give the host
+   `position: relative` and an `::before` that pulls in this layer. */
+.glass-sheen::before {
+	content: '';
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	background: var(--glass-sheen);
+	mix-blend-mode: screen;
+	opacity: 0.9;
+	pointer-events: none;
 }
 
 :focus-visible {
@@ -75,7 +108,7 @@ h3 {
 	max-width: 640px;
 	margin: 0 auto;
 	padding: var(--space-4);
-	padding-bottom: 5.5rem; /* clear the fixed tab bar */
+	padding-bottom: 6.5rem; /* clear the floating tab bar */
 }
 
 .muted {

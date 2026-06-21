@@ -16,7 +16,7 @@
 		...rest
 	}: Props = $props();
 
-	const classes = $derived(['card', className].filter(Boolean).join(' '));
+	const classes = $derived(['card', 'glass-sheen', className].filter(Boolean).join(' '));
 </script>
 
 <svelte:element this={as} class={classes} {...rest}>
@@ -28,6 +28,8 @@
 
 <style>
 	.card {
+		position: relative;
+		isolation: isolate;
 		border: 1px solid var(--line);
 		border-radius: var(--radius-lg);
 		padding: var(--space-4);
@@ -35,7 +37,13 @@
 		background: var(--surface);
 		-webkit-backdrop-filter: var(--blur);
 		backdrop-filter: var(--blur);
-		box-shadow: var(--shadow);
+		box-shadow: var(--shadow), var(--edge-highlight);
+	}
+
+	/* Keep content above the sheen overlay. */
+	.card > :global(*) {
+		position: relative;
+		z-index: 1;
 	}
 
 	.card :global(:last-child) {

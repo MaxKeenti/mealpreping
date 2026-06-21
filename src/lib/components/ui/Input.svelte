@@ -24,6 +24,17 @@
 		background: color-mix(in srgb, var(--surface-strong) 72%, transparent);
 		-webkit-backdrop-filter: var(--blur);
 		backdrop-filter: var(--blur);
-		box-shadow: inset 0 1px 0 color-mix(in srgb, white 18%, transparent);
+		box-shadow: var(--edge-highlight);
+		transition:
+			border-color 160ms ease,
+			box-shadow 160ms ease;
+	}
+
+	.input:focus-visible {
+		outline: none;
+		border-color: color-mix(in srgb, var(--accent) 55%, transparent);
+		box-shadow:
+			var(--edge-highlight),
+			0 0 0 3px var(--accent-soft);
 	}
 </style>

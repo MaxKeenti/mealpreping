@@ -50,12 +50,24 @@
 		border: 1px solid var(--line);
 		border-radius: var(--radius-sm);
 		background: var(--surface);
-		box-shadow: inset 0 1px 0 color-mix(in srgb, white 16%, transparent);
+		box-shadow: var(--edge-highlight);
+		transition:
+			background 160ms ease,
+			border-color 160ms ease,
+			transform 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
 	}
 
 	input:checked + .box {
 		border-color: transparent;
-		background: var(--accent);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--accent) 88%, white),
+			var(--accent)
+		);
+		box-shadow:
+			inset 0 1px 0 color-mix(in srgb, white 45%, transparent),
+			0 4px 10px color-mix(in srgb, var(--accent) 30%, transparent);
+		transform: scale(1.05);
 	}
 
 	input:checked + .box::after {

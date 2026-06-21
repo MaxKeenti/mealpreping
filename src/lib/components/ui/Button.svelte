@@ -24,7 +24,9 @@
 	}: Props = $props();
 
 	const classes = $derived(
-		['button', `variant-${variant}`, `size-${size}`, className].filter(Boolean).join(' ')
+		['button', 'glass-sheen', `variant-${variant}`, `size-${size}`, className]
+			.filter(Boolean)
+			.join(' ')
 	);
 </script>
 
@@ -40,6 +42,8 @@
 
 <style>
 	.button {
+		position: relative;
+		isolation: isolate;
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
@@ -57,19 +61,30 @@
 		background: var(--surface);
 		-webkit-backdrop-filter: var(--blur);
 		backdrop-filter: var(--blur);
-		box-shadow: var(--shadow-sm);
+		box-shadow: var(--shadow-sm), var(--edge-highlight);
 		cursor: pointer;
+		/* Springy, liquid-feeling response. */
 		transition:
-			background 160ms ease,
-			border-color 160ms ease,
-			box-shadow 160ms ease,
-			transform 160ms ease;
+			background 200ms ease,
+			border-color 200ms ease,
+			box-shadow 200ms ease,
+			transform 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	/* Sheen rides above the surface but below the label. */
+	.button > :global(*) {
+		position: relative;
+		z-index: 1;
 	}
 
 	.button:hover {
 		background: var(--surface-strong);
-		box-shadow: var(--shadow);
-		transform: translateY(-1px);
+		box-shadow: var(--shadow), var(--edge-highlight);
+		transform: translateY(-1px) scale(1.015);
+	}
+
+	.button:active {
+		transform: translateY(0) scale(0.98);
 	}
 
 	.button:where(:disabled, [aria-disabled='true']) {
@@ -87,14 +102,29 @@
 	}
 
 	.variant-primary {
-		background: var(--accent);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--accent) 90%, white) 0%,
+			var(--accent) 100%
+		);
 		border-color: transparent;
 		color: white;
-		box-shadow: 0 10px 24px color-mix(in srgb, var(--accent) 26%, transparent);
+		box-shadow:
+			0 10px 24px color-mix(in srgb, var(--accent) 32%, transparent),
+			inset 0 1px 0 color-mix(in srgb, white 45%, transparent),
+			inset 0 -8px 16px -10px color-mix(in srgb, black 30%, transparent);
 	}
 
 	.variant-primary:hover {
-		background: color-mix(in srgb, var(--accent) 88%, white);
+		background: linear-gradient(
+			180deg,
+			color-mix(in srgb, var(--accent) 78%, white) 0%,
+			color-mix(in srgb, var(--accent) 94%, white) 100%
+		);
+		box-shadow:
+			0 14px 30px color-mix(in srgb, var(--accent) 38%, transparent),
+			inset 0 1px 0 color-mix(in srgb, white 50%, transparent),
+			inset 0 -8px 16px -10px color-mix(in srgb, black 30%, transparent);
 	}
 
 	.variant-ghost {

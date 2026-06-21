@@ -19,7 +19,7 @@
 		border-radius: var(--radius);
 		padding: var(--space-3);
 		background: var(--fill);
-		box-shadow: inset 0 1px 0 color-mix(in srgb, white 12%, transparent);
+		box-shadow: var(--edge-highlight);
 	}
 
 	strong {

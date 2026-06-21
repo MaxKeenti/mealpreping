@@ -57,6 +57,7 @@
 		background: color-mix(in srgb, var(--surface) 72%, transparent);
 		-webkit-backdrop-filter: var(--blur);
 		backdrop-filter: var(--blur);
+		box-shadow: var(--edge-highlight);
 	}
 
 	button {
@@ -72,7 +73,19 @@
 		border: 1px solid var(--line);
 		border-radius: var(--radius-full);
 		background: var(--surface-strong);
+		box-shadow: var(--edge-highlight);
 		cursor: pointer;
+		transition:
+			background 160ms ease,
+			transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	}
+
+	button:hover:not(:disabled) {
+		background: color-mix(in srgb, var(--accent) 12%, var(--surface-strong));
+	}
+
+	button:active:not(:disabled) {
+		transform: scale(0.9);
 	}
 
 	button:disabled {
