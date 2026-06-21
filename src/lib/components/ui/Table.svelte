@@ -29,15 +29,16 @@
 		background: color-mix(in srgb, var(--surface) 58%, transparent);
 	}
 
-	:global(th),
-	:global(td) {
+	/* Scoped to .table-wrap so these don't leak to every table in the app. */
+	.table-wrap :global(th),
+	.table-wrap :global(td) {
 		padding: 0.65rem;
 		border-bottom: 1px solid var(--line);
 		text-align: left;
 		vertical-align: top;
 	}
 
-	:global(th) {
+	.table-wrap :global(th) {
 		background: var(--accent-soft);
 		color: var(--accent);
 		font-size: var(--text-xs);
@@ -45,7 +46,7 @@
 		letter-spacing: 0.04em;
 	}
 
-	:global(tr:last-child td) {
+	.table-wrap :global(tr:last-child td) {
 		border-bottom: none;
 	}
 </style>

@@ -40,7 +40,7 @@
 	<button type="button" aria-label="Decrease" disabled={decreaseDisabled} onclick={() => update(-step)}>
 		−
 	</button>
-	<span>{format(value)}</span>
+	<span aria-live="polite" aria-atomic="true">{format(value)}</span>
 	<button type="button" aria-label="Increase" disabled={increaseDisabled} onclick={() => update(step)}>
 		+
 	</button>

@@ -75,5 +75,8 @@
 	.content {
 		flex: 1;
 		min-width: 0;
+		display: flex;
+		align-items: baseline;
+		gap: var(--space-2);
 	}
 </style>
