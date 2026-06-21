@@ -36,26 +36,34 @@
 		position: fixed;
 		inset: auto 0 0 0;
 		display: flex;
+		gap: var(--space-1);
 		border-top: 1px solid var(--line);
 		background: var(--surface-strong);
 		-webkit-backdrop-filter: var(--blur);
 		backdrop-filter: var(--blur);
-		padding-bottom: env(safe-area-inset-bottom);
+		box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.08);
+		padding: var(--space-2) var(--space-2) calc(var(--space-2) + env(safe-area-inset-bottom));
 	}
 
 	.tab-bar a {
 		flex: 1;
 		min-height: 44px;
-		padding: 0.75rem;
+		display: grid;
+		place-items: center;
+		padding: 0.65rem 0.5rem;
 		text-align: center;
 		text-decoration: none;
 		color: inherit;
-		font-size: 0.9rem;
+		font-size: var(--text-sm);
+		font-weight: 650;
+		border: 1px solid transparent;
+		border-radius: var(--radius-full);
 	}
 
 	.tab-bar a[aria-current='page'] {
-		font-weight: 700;
 		color: var(--accent);
-		background: var(--fill);
+		border-color: color-mix(in srgb, var(--accent) 26%, transparent);
+		background: var(--accent-soft);
+		box-shadow: var(--shadow-sm);
 	}
 </style>

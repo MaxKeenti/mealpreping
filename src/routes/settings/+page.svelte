@@ -2,6 +2,7 @@
 	import { goto } from '$app/navigation';
 	import { defaultProfile } from '$lib/data';
 	import type { UserProfile } from '$lib/data';
+	import { Button, Card } from '$lib/components/ui';
 	import { calculateNutritionTargets } from '$lib/logic';
 	import { appState, resetAll, updateProfile } from '$lib/state/appState.svelte';
 	import ProfileForm from '$lib/components/ProfileForm.svelte';
@@ -10,7 +11,7 @@
 	// exists; fall back to the reference profile defensively). Arrays are cloned so
 	// binds don't mutate the persisted state until Save.
 	const source = appState.profile ?? defaultProfile;
-	const draft = $state<UserProfile>({
+	let draft = $state<UserProfile>({
 		...source,
 		weekendAppliances: [...source.weekendAppliances],
 		weekdayAppliances: [...source.weekdayAppliances]
@@ -42,10 +43,9 @@
 	<h1>Settings</h1>
 	<p class="muted">Edit your profile. Saving recomputes targets and rescales your current plan.</p>
 
-	<ProfileForm {draft} section="all" />
+	<ProfileForm bind:draft section="all" />
 
-	<section class="card">
-		<h2>Updated targets</h2>
+	<Card title="Updated targets">
 		{#if targets}
 			<p>Calories: <strong>{targets.caloriesMin}–{targets.caloriesMax}</strong> kcal/day</p>
 			<p>Protein: <strong>{targets.proteinMin}–{targets.proteinMax}</strong> g/day</p>
@@ -53,10 +53,10 @@
 		{:else}
 			<p class="muted">Enter your weight to see targets.</p>
 		{/if}
-	</section>
+	</Card>
 
 	<div class="row">
-		<button type="button" class="primary" onclick={save} disabled={!targets}>Save</button>
-		<button type="button" onclick={startOver}>Start over</button>
+		<Button variant="primary" onclick={save} disabled={!targets}>Save</Button>
+		<Button onclick={startOver}>Start over</Button>
 	</div>
 </main>

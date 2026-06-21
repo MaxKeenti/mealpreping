@@ -1,12 +1,13 @@
 <script lang="ts">
 	import { applianceLabels, appliances } from '$lib/data';
 	import type { ActivityLevel, Appetite, BudgetDial, Goal, UserProfile } from '$lib/data';
+	import { Card, Checkbox, CheckboxGroup, Field, Input, ToggleGroup } from '$lib/components/ui';
 
 	// `section` lets the onboarding wizard render one group per step while Settings
-	// shows everything at once. `draft` is a shared $state proxy — the fields below
-	// mutate its properties in place, so no two-way `bind:` of the object is needed.
+	// shows everything at once. `draft` is a shared $state proxy; callers bind it so
+	// nested form controls can mutate fields without Svelte ownership warnings.
 	let {
-		draft,
+		draft = $bindable<UserProfile>(),
 		section = 'all'
 	}: { draft: UserProfile; section?: 'about' | 'kitchen' | 'all' } = $props();
 
@@ -31,89 +32,45 @@
 		{ value: 'normal', label: 'Normal' },
 		{ value: 'comfortable', label: 'Comfortable' }
 	];
+	const applianceOptions = appliances.map((appliance) => ({
+		value: appliance,
+		label: applianceLabels[appliance]
+	}));
+	const mealCounts = [
+		{ value: 1, label: '1' },
+		{ value: 2, label: '2' },
+		{ value: 3, label: '3' }
+	];
 </script>
 
 {#if section === 'about' || section === 'all'}
-	<section class="card">
-		<h2>About you</h2>
-		<label>
-			Height (cm)
-			<input type="number" min="120" max="220" bind:value={draft.heightCm} />
-		</label>
-		<label>
-			Weight (kg)
-			<input type="number" min="30" max="200" bind:value={draft.weightKg} />
-		</label>
-		<label>
-			Goal
-			<select bind:value={draft.goal}>
-				{#each goals as goal (goal.value)}
-					<option value={goal.value}>{goal.label}</option>
-				{/each}
-			</select>
-		</label>
-		<label>
-			Activity level
-			<select bind:value={draft.activityLevel}>
-				{#each activityLevels as level (level.value)}
-					<option value={level.value}>{level.label}</option>
-				{/each}
-			</select>
-		</label>
-		<label>
-			Appetite
-			<select bind:value={draft.appetite}>
-				{#each appetites as appetite (appetite.value)}
-					<option value={appetite.value}>{appetite.label}</option>
-				{/each}
-			</select>
-		</label>
-	</section>
+	<Card title="About you">
+		<Field label="Height (cm)">
+			<Input type="number" min="120" max="220" bind:value={draft.heightCm} />
+		</Field>
+		<Field label="Weight (kg)">
+			<Input type="number" min="30" max="200" bind:value={draft.weightKg} />
+		</Field>
+		<ToggleGroup label="Goal" options={goals} bind:value={draft.goal} />
+		<ToggleGroup label="Activity level" options={activityLevels} bind:value={draft.activityLevel} />
+		<ToggleGroup label="Appetite" options={appetites} bind:value={draft.appetite} />
+	</Card>
 {/if}
 
 {#if section === 'kitchen' || section === 'all'}
-	<section class="card">
-		<h2>Kitchen &amp; meals</h2>
-		<fieldset>
-			<legend>Weekend appliances</legend>
-			{#each appliances as appliance (appliance)}
-				<label>
-					<input type="checkbox" value={appliance} bind:group={draft.weekendAppliances} />
-					{applianceLabels[appliance]}
-				</label>
-			{/each}
-		</fieldset>
-		<fieldset>
-			<legend>Weekday appliances</legend>
-			{#each appliances as appliance (appliance)}
-				<label>
-					<input type="checkbox" value={appliance} bind:group={draft.weekdayAppliances} />
-					{applianceLabels[appliance]}
-				</label>
-			{/each}
-		</fieldset>
-		<label>
-			Meals per day
-			<select bind:value={draft.mealsPerDay}>
-				<option value={1}>1</option>
-				<option value={2}>2</option>
-				<option value={3}>3</option>
-			</select>
-		</label>
-		<label>
-			Budget
-			<select bind:value={draft.budgetDial}>
-				{#each budgets as budget (budget.value)}
-					<option value={budget.value}>{budget.label}</option>
-				{/each}
-			</select>
-		</label>
-		<fieldset>
-			<legend>Snacks</legend>
-			<label>
-				<input type="checkbox" bind:checked={draft.includeSnacks} />
-				Include snacks
-			</label>
-		</fieldset>
-	</section>
+	<Card title="Kitchen &amp; meals">
+		<CheckboxGroup
+			legend="Weekend appliances"
+			options={applianceOptions}
+			bind:value={draft.weekendAppliances}
+		/>
+		<CheckboxGroup
+			legend="Weekday appliances"
+			options={applianceOptions}
+			bind:value={draft.weekdayAppliances}
+		/>
+		<ToggleGroup label="Meals per day" options={mealCounts} bind:value={draft.mealsPerDay} />
+		<ToggleGroup label="Budget" options={budgets} bind:value={draft.budgetDial} />
+		<Checkbox bind:checked={draft.includeSnacks}>Include snacks</Checkbox>
+	</Card>
 {/if}

@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { mealPrepData } from '$lib/data';
 	import type { MealType } from '$lib/data';
+	import MealRow from '$lib/components/MealRow.svelte';
+	import { Button, Card } from '$lib/components/ui';
 	import { getMeal } from '$lib/logic';
 	import { appState, regeneratePlan } from '$lib/state/appState.svelte';
 
@@ -40,34 +42,34 @@
 <main class="page">
 	<header class="home-header">
 		<h1>Today</h1>
-		<a class="gear" href="/settings" aria-label="Settings" title="Settings">⚙</a>
+		<Button href="/settings" size="icon" variant="ghost" aria-label="Settings" title="Settings">
+			⚙
+		</Button>
 	</header>
 
 	{#if plan}
-		<section class="card">
-			<h2>Targets</h2>
+		<Card title="Targets">
 			<p>Calories: <strong>{plan.targets.caloriesMin}–{plan.targets.caloriesMax}</strong> kcal/day</p>
 			<p>Protein: <strong>{plan.targets.proteinMin}–{plan.targets.proteinMax}</strong> g/day</p>
 			<p class="muted">
 				Today so far: {todayTotals.calories} kcal · {todayTotals.protein} g protein
 			</p>
-		</section>
+		</Card>
 
-		<section class="card">
-			<h2>Today's meals</h2>
+		<Card title="Today's meals">
 			<ul>
 				{#each todayMeals as meal (meal.slotIndex)}
-					<li class="meal">
-						<span>
-							<strong>{slotLabels[meal.slot]}</strong> — {mealName(meal.mealId)}
-						</span>
-						<span class="muted">{meal.calories} kcal · {meal.protein} g</span>
-					</li>
+					<MealRow
+						label={slotLabels[meal.slot]}
+						name={mealName(meal.mealId)}
+						calories={meal.calories}
+						protein={meal.protein}
+					/>
 				{/each}
 			</ul>
-		</section>
+		</Card>
 
-		<button type="button" onclick={regeneratePlan}>Regenerate plan</button>
+		<Button onclick={regeneratePlan}>Regenerate plan</Button>
 	{:else}
 		<p class="muted">No plan yet.</p>
 	{/if}
@@ -79,34 +81,6 @@
 		align-items: center;
 		justify-content: space-between;
 		gap: 0.5rem;
-	}
-
-	.gear {
-		display: grid;
-		place-items: center;
-		width: 44px;
-		height: 44px;
-		flex: none;
-		font-size: 1.4rem;
-		line-height: 1;
-		text-decoration: none;
-		color: inherit;
-		border: 1px solid var(--line);
-		border-radius: 50%;
-		background: var(--surface);
-		-webkit-backdrop-filter: var(--blur);
-		backdrop-filter: var(--blur);
-	}
-
-	.meal {
-		display: flex;
-		justify-content: space-between;
-		gap: 0.5rem;
-		padding: 0.4rem 0;
-		border-bottom: 1px solid var(--line);
-	}
-
-	.meal:last-child {
-		border-bottom: none;
+		margin-bottom: var(--space-4);
 	}
 </style>

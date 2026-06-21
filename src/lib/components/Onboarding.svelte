@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { defaultProfile } from '$lib/data';
 	import type { UserProfile } from '$lib/data';
+	import { Button, Card } from '$lib/components/ui';
 	import { calculateNutritionTargets } from '$lib/logic';
 	import { completeOnboarding } from '$lib/state/appState.svelte';
 	import ProfileForm from '$lib/components/ProfileForm.svelte';
@@ -9,7 +10,7 @@
 
 	// Seed the draft from the reference profile so clicking straight through still
 	// produces a valid plan. Copy the arrays so binds don't mutate the default.
-	const draft = $state<UserProfile>({
+	let draft = $state<UserProfile>({
 		...defaultProfile,
 		weekendAppliances: [...defaultProfile.weekendAppliances],
 		weekdayAppliances: [...defaultProfile.weekdayAppliances]
@@ -34,12 +35,11 @@
 	<p class="muted">Step {step + 1} of 3</p>
 
 	{#if step === 0}
-		<ProfileForm {draft} section="about" />
+		<ProfileForm bind:draft section="about" />
 	{:else if step === 1}
-		<ProfileForm {draft} section="kitchen" />
+		<ProfileForm bind:draft section="kitchen" />
 	{:else}
-		<section class="card">
-			<h2>Your starting targets</h2>
+		<Card title="Your starting targets">
 			{#if targets}
 				<p>Calories: <strong>{targets.caloriesMin}–{targets.caloriesMax}</strong> kcal/day</p>
 				<p>Protein: <strong>{targets.proteinMin}–{targets.proteinMax}</strong> g/day</p>
@@ -47,19 +47,19 @@
 			{:else}
 				<p class="muted">Enter your weight to see targets.</p>
 			{/if}
-		</section>
+		</Card>
 	{/if}
 
 	<div class="row">
 		{#if step > 0}
-			<button type="button" onclick={() => (step -= 1)}>Back</button>
+			<Button onclick={() => (step -= 1)}>Back</Button>
 		{/if}
 		{#if step < 2}
-			<button type="button" onclick={() => (step += 1)}>Next</button>
+			<Button onclick={() => (step += 1)}>Next</Button>
 		{:else}
-			<button type="button" class="primary" onclick={finish} disabled={!targets}>
+			<Button variant="primary" onclick={finish} disabled={!targets}>
 				Generate my plan
-			</button>
+			</Button>
 		{/if}
 	</div>
 </main>
