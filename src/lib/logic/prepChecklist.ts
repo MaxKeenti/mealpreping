@@ -1,5 +1,5 @@
-import { applianceLabels, appliances, mealPrepData } from '$lib/data';
-import type { Appliance, MealPrepData, WeeklyPlan } from '$lib/data';
+import { applianceLabel, appliances, localizedName, mealPrepData } from '$lib/data';
+import type { Appliance, Locale, MealPrepData, WeeklyPlan } from '$lib/data';
 import { formatFoodAmount, getFood, getMeal, getPrepComponent, prepIngredientAmountsForCookedGrams } from './units';
 
 export interface PrepChecklistIngredient {
@@ -24,7 +24,11 @@ export interface PrepChecklistGroup {
 	items: PrepChecklistItem[];
 }
 
-export function buildPrepChecklist(plan: WeeklyPlan, data: MealPrepData = mealPrepData): PrepChecklistGroup[] {
+export function buildPrepChecklist(
+	plan: WeeklyPlan,
+	data: MealPrepData = mealPrepData,
+	locale: Locale = 'en'
+): PrepChecklistGroup[] {
 	const cookedTotals = new Map<string, number>();
 
 	for (const plannedMeal of plan.meals) {
@@ -45,7 +49,7 @@ export function buildPrepChecklist(plan: WeeklyPlan, data: MealPrepData = mealPr
 
 		return {
 			prepId,
-			name: prep.name,
+			name: localizedName(prep, locale),
 			appliance: prep.appliance,
 			cookedGrams: Math.round(cookedGrams),
 			rawIngredients: prepIngredientAmountsForCookedGrams(prep, cookedGrams).map((ingredient) => {
@@ -53,9 +57,9 @@ export function buildPrepChecklist(plan: WeeklyPlan, data: MealPrepData = mealPr
 
 				return {
 					foodId: ingredient.foodId,
-					name: food.name,
+					name: localizedName(food, locale),
 					grams: Math.round(ingredient.rawGrams),
-					friendlyAmount: formatFoodAmount(food, ingredient.rawGrams)
+					friendlyAmount: formatFoodAmount(food, ingredient.rawGrams, locale)
 				};
 			}),
 			storageNotes: prep.storageNotes
@@ -65,7 +69,7 @@ export function buildPrepChecklist(plan: WeeklyPlan, data: MealPrepData = mealPr
 	return appliances
 		.map((appliance) => ({
 			appliance,
-			label: applianceLabels[appliance],
+			label: applianceLabel(appliance, locale),
 			items: items
 				.filter((item) => item.appliance === appliance)
 				.sort((left, right) => left.name.localeCompare(right.name))

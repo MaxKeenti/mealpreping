@@ -4,15 +4,17 @@
 	import favicon from '$lib/assets/favicon.svg';
 	import { appState } from '$lib/state/appState.svelte';
 	import Onboarding from '$lib/components/Onboarding.svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	let { children } = $props();
 
-	const tabs = [
-		{ href: '/', label: 'Home' },
-		{ href: '/planner', label: 'Plan' },
-		{ href: '/shopping-list', label: 'Shopping' },
-		{ href: '/guide', label: 'Guide' }
-	];
+	const locale = $derived(appState.profile?.locale ?? 'en');
+	const tabs = $derived([
+		{ href: '/', label: m.nav_home({}, { locale }) },
+		{ href: '/planner', label: m.nav_plan({}, { locale }) },
+		{ href: '/shopping-list', label: m.nav_shopping({}, { locale }) },
+		{ href: '/guide', label: m.nav_guide({}, { locale }) }
+	]);
 </script>
 
 <svelte:head><link rel="icon" href={favicon} /></svelte:head>

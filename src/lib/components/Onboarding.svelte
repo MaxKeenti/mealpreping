@@ -5,16 +5,18 @@
 	import { calculateNutritionTargets } from '$lib/logic';
 	import { completeOnboarding } from '$lib/state/appState.svelte';
 	import ProfileForm from '$lib/components/ProfileForm.svelte';
+	import { m } from '$lib/paraglide/messages';
 
 	let step = $state(0);
 
 	// Seed the draft from the reference profile so clicking straight through still
 	// produces a valid plan. Copy the arrays so binds don't mutate the default.
 	let draft = $state<UserProfile>({
-		...defaultProfile,
-		weekendAppliances: [...defaultProfile.weekendAppliances],
-		weekdayAppliances: [...defaultProfile.weekdayAppliances]
-	});
+	...defaultProfile,
+	weekendAppliances: [...defaultProfile.weekendAppliances],
+	weekdayAppliances: [...defaultProfile.weekdayAppliances],
+	dislikedFoodIds: [...defaultProfile.dislikedFoodIds]
+});
 
 	const targets = $derived.by(() => {
 		if (!draft.weightKg || draft.weightKg <= 0) {
@@ -22,43 +24,44 @@
 		}
 		return calculateNutritionTargets(draft);
 	});
+	const locale = $derived(draft.locale);
 
 	function finish() {
 		completeOnboarding($state.snapshot(draft) as UserProfile);
 	}
 </script>
 
-<svelte:head><title>Welcome — Mealpreping</title></svelte:head>
+<svelte:head><title>{m.welcome({}, { locale })} — {m.app_title({}, { locale })}</title></svelte:head>
 
 <main class="page">
-	<h1>Welcome</h1>
-	<p class="muted">Step {step + 1} of 3</p>
+	<h1>{m.welcome({}, { locale })}</h1>
+	<p class="muted">{m.step({}, { locale })} {step + 1} {m.of({}, { locale })} 3</p>
 
 	{#if step === 0}
 		<ProfileForm bind:draft section="about" />
 	{:else if step === 1}
 		<ProfileForm bind:draft section="kitchen" />
 	{:else}
-		<Card title="Your starting targets">
+		<Card title={m.starting_targets({}, { locale })}>
 			{#if targets}
-				<p>Calories: <strong>{targets.caloriesMin}–{targets.caloriesMax}</strong> kcal/day</p>
-				<p>Protein: <strong>{targets.proteinMin}–{targets.proteinMax}</strong> g/day</p>
-				<p class="muted">Estimates — fine-tune portions later on the Plan tab.</p>
+				<p>{m.calories({}, { locale })}: <strong>{targets.caloriesMin}–{targets.caloriesMax}</strong> {m.kcal_day({}, { locale })}</p>
+				<p>{m.protein({}, { locale })}: <strong>{targets.proteinMin}–{targets.proteinMax}</strong> {m.protein_day({}, { locale })}</p>
+				<p class="muted">{m.target_estimates({}, { locale })}</p>
 			{:else}
-				<p class="muted">Enter your weight to see targets.</p>
+				<p class="muted">{m.enter_weight_targets({}, { locale })}</p>
 			{/if}
 		</Card>
 	{/if}
 
 	<div class="row">
 		{#if step > 0}
-			<Button onclick={() => (step -= 1)}>Back</Button>
+			<Button onclick={() => (step -= 1)}>{m.back({}, { locale })}</Button>
 		{/if}
 		{#if step < 2}
-			<Button onclick={() => (step += 1)}>Next</Button>
+			<Button onclick={() => (step += 1)}>{m.next({}, { locale })}</Button>
 		{:else}
 			<Button variant="primary" onclick={finish} disabled={!targets}>
-				Generate my plan
+				{m.generate_my_plan({}, { locale })}
 			</Button>
 		{/if}
 	</div>

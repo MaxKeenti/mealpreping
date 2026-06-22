@@ -12,5 +12,7 @@ export const defaultProfile: UserProfile = {
 	includeSnacks: true,
 	portionMultiplier: 1,
 	budgetDial: 'tight',
+	weeklyBudgetMxn: 900,
+	dislikedFoodIds: [],
 	locale: 'en'
 };

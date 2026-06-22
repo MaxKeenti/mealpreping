@@ -1,5 +1,6 @@
 import type {
 	FoodItem,
+	Locale,
 	Meal,
 	MealPrepData,
 	Nutrition,
@@ -149,10 +150,10 @@ export function combineFoodAmounts(amounts: FoodAmount[]): FoodAmount[] {
 	return [...totals.entries()].map(([foodId, grams]) => ({ foodId, grams }));
 }
 
-export function formatGrams(grams: number): string {
+export function formatGrams(grams: number, locale: Locale = 'en'): string {
 	if (grams >= 1000) {
 		const kg = grams / 1000;
-		return `${formatNumber(kg, kg >= 10 ? 0 : 1)} kg`;
+		return `${formatNumber(kg, kg >= 10 ? 0 : 1, locale)} kg`;
 	}
 
 	if (grams >= 100) {
@@ -162,9 +163,9 @@ export function formatGrams(grams: number): string {
 	return `${Math.round(grams / 5) * 5} g`;
 }
 
-export function formatFoodAmount(food: FoodItem, grams: number): string {
+export function formatFoodAmount(food: FoodItem, grams: number, locale: Locale = 'en'): string {
 	if (!food.householdUnit) {
-		return formatGrams(grams);
+		return formatGrams(grams, locale);
 	}
 
 	const units = grams / food.householdUnit.gramsPerUnit;
@@ -172,21 +173,34 @@ export function formatFoodAmount(food: FoodItem, grams: number): string {
 
 	if (units >= 0.75 && units <= maxFriendlyUnits) {
 		const roundedUnits = units >= 5 ? Math.round(units) : Math.round(units * 2) / 2;
-		const label = pluralize(food.householdUnit.label, roundedUnits);
-		return `${formatNumber(roundedUnits, roundedUnits % 1 === 0 ? 0 : 1)} ${label}`;
+		const label = pluralize(food.householdUnit.label, roundedUnits, locale);
+		return `${formatNumber(roundedUnits, roundedUnits % 1 === 0 ? 0 : 1, locale)} ${label}`;
 	}
 
-	return formatGrams(grams);
+	return formatGrams(grams, locale);
 }
 
-function formatNumber(value: number, fractionDigits: number): string {
-	return value.toLocaleString('en', {
+export function formatNumber(value: number, fractionDigits: number, locale: Locale = 'en'): string {
+	return value.toLocaleString(locale === 'es' ? 'es-MX' : 'en-US', {
 		minimumFractionDigits: 0,
 		maximumFractionDigits: fractionDigits
 	});
 }
 
-function pluralize(label: string, amount: number): string {
+function pluralize(label: string, amount: number, locale: Locale): string {
+	if (locale === 'es') {
+		const labels: Record<string, [string, string]> = {
+			piece: ['pieza', 'piezas'],
+			cup: ['taza', 'tazas'],
+			tbsp: ['cucharada', 'cucharadas'],
+			tsp: ['cucharadita', 'cucharaditas'],
+			slice: ['rebanada', 'rebanadas'],
+			scoop: ['medida', 'medidas']
+		};
+		const translated = labels[label] ?? [label, `${label}s`];
+		return amount === 1 ? translated[0] : translated[1];
+	}
+
 	if (amount === 1) {
 		return label;
 	}

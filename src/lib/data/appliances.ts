@@ -1,4 +1,4 @@
-import type { Appliance, ShoppingCategory } from './types';
+import type { Appliance, Locale, ShoppingCategory } from './types';
 
 export const appliances = [
 	'microwave',
@@ -16,6 +16,15 @@ export const applianceLabels: Record<Appliance, string> = {
 	blender: 'Blender',
 	'small-oven': 'Small oven',
 	'air-fryer': 'Air fryer'
+};
+
+export const applianceLabelsEs: Record<Appliance, string> = {
+	microwave: 'Microondas',
+	'electric-grill': 'Parrilla electrica',
+	'rice-cooker': 'Olla arrocera',
+	blender: 'Licuadora',
+	'small-oven': 'Horno pequeno',
+	'air-fryer': 'Freidora de aire'
 };
 
 export const shoppingCategoryOrder = [
@@ -37,3 +46,21 @@ export const shoppingCategoryLabels: Record<ShoppingCategory, string> = {
 	'sauces-flavor': 'Sauces and flavor',
 	'pantry-backup': 'Pantry backup'
 };
+
+export const shoppingCategoryLabelsEs: Record<ShoppingCategory, string> = {
+	'core-staples': 'Basicos',
+	proteins: 'Proteinas',
+	dairy: 'Lacteos',
+	fruits: 'Frutas',
+	vegetables: 'Verduras',
+	'sauces-flavor': 'Salsas y sabor',
+	'pantry-backup': 'Despensa de respaldo'
+};
+
+export function applianceLabel(appliance: Appliance, locale: Locale = 'en'): string {
+	return locale === 'es' ? applianceLabelsEs[appliance] : applianceLabels[appliance];
+}
+
+export function shoppingCategoryLabel(category: ShoppingCategory, locale: Locale = 'en'): string {
+	return locale === 'es' ? shoppingCategoryLabelsEs[category] : shoppingCategoryLabels[category];
+}

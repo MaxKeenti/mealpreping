@@ -1,27 +1,54 @@
 <script lang="ts">
-	import { mealPrepData } from '$lib/data';
+	import { localizedName, mealPrepData } from '$lib/data';
 	import type { Meal, MealType, PlannedMeal } from '$lib/data';
 	import MealRow from '$lib/components/MealRow.svelte';
-	import { Card, Checkbox, Stepper, ToggleGroup } from '$lib/components/ui';
-	import { buildPrepChecklist, getMeal, nutritionForMeal } from '$lib/logic';
-	import { appState, setCalorieBump, setPortionMultiplier } from '$lib/state/appState.svelte';
+	import { Callout, Card, Checkbox, Stepper, ToggleGroup } from '$lib/components/ui';
+	import {
+		budgetStatus,
+		buildPrepChecklist,
+		formatCurrencyMxn,
+		formatNumber,
+		getMeal,
+		nutritionForMeal,
+		prepSetMinutes,
+		weeklyPlanCost
+	} from '$lib/logic';
+	import {
+		appState,
+		setCalorieBump,
+		setLeftoversMode,
+		setMicrowaveOnly,
+		setPortionMultiplier
+	} from '$lib/state/appState.svelte';
+	import { m } from '$lib/paraglide/messages';
 
-	const slotLabels: Record<MealType, string> = {
-		breakfast: 'Breakfast',
-		lunch: 'Lunch',
-		dinner: 'Dinner',
-		snack: 'Snack'
-	};
 	const bumpOptions = [0, 300, 500];
-	const bumpChoices = bumpOptions.map((bump) => ({
-		value: bump,
-		label: bump === 0 ? 'No bump' : `+${bump} kcal`
-	}));
 
 	const plan = $derived(appState.plan);
+	const profile = $derived(appState.profile);
+	const locale = $derived(profile?.locale ?? 'en');
+	const slotLabels = $derived<Record<MealType, string>>({
+		breakfast: m.breakfast({}, { locale }),
+		lunch: m.lunch({}, { locale }),
+		dinner: m.dinner({}, { locale }),
+		snack: m.snack({}, { locale })
+	});
+	const bumpChoices = $derived(
+		bumpOptions.map((bump) => ({
+			value: bump,
+			label: bump === 0 ? m.no_bump({}, { locale }) : `+${bump} kcal`
+		}))
+	);
 	const multiplier = $derived(appState.profile?.portionMultiplier ?? 1);
 	const calorieBump = $derived(appState.calorieBump);
-	const prepChecklist = $derived(plan ? buildPrepChecklist(plan, mealPrepData) : []);
+	const microwaveOnly = $derived(appState.microwaveOnly);
+	const leftoversMode = $derived(appState.leftoversMode);
+	const microwaveAvailable = $derived(profile?.weekdayAppliances.includes('microwave') ?? false);
+	const prepChecklist = $derived(plan ? buildPrepChecklist(plan, mealPrepData, locale) : []);
+	const totalPrepMinutes = $derived(plan ? prepSetMinutes(plan.prepSet, mealPrepData) : 0);
+	const cost = $derived(plan ? weeklyPlanCost(plan, mealPrepData) : null);
+	const status = $derived(cost && profile ? budgetStatus(cost.totalMxn, profile.weeklyBudgetMxn) : null);
+	const fallbackCount = $derived(plan?.fallbacks?.length ?? 0);
 	const emergencyMeals = $derived.by(() =>
 		mealPrepData.meals
 			.filter((meal): meal is Meal & { isEmergency: true } => meal.isEmergency === true)
@@ -53,33 +80,65 @@
 	});
 
 	function mealName(mealId: string): string {
-		return getMeal(mealPrepData, mealId).name;
+		return localizedName(getMeal(mealPrepData, mealId), locale);
 	}
 </script>
 
-<svelte:head><title>Plan — Mealpreping</title></svelte:head>
+<svelte:head><title>{m.nav_plan({}, { locale })} — {m.app_title({}, { locale })}</title></svelte:head>
 
 <main class="page">
-	<h1>Weekly plan</h1>
+	<h1>{m.planner_title({}, { locale })}</h1>
 
 	{#if plan}
-		<Card title="Portions">
+		<Card title={m.portions({}, { locale })}>
 			<Stepper
 				value={multiplier}
 				min={0.5}
 				max={2}
 				step={0.05}
-				label="Portion multiplier"
-				format={(current) => `Multiplier: ${current.toFixed(2)}×`}
+				label={m.portion_multiplier({}, { locale })}
+				format={(current) => `${m.multiplier({}, { locale })}: ${current.toFixed(2)}×`}
 				onValueChange={setPortionMultiplier}
 			/>
 
-			<h3>Not gaining? Add calories</h3>
+			<h3>{m.not_gaining({}, { locale })}</h3>
 			<ToggleGroup options={bumpChoices} value={calorieBump} onValueChange={setCalorieBump} />
 		</Card>
 
+		<Card title={m.weekly_constraints({}, { locale })}>
+			{#if microwaveAvailable}
+				<Checkbox
+					checked={microwaveOnly}
+					onchange={(event) => setMicrowaveOnly(event.currentTarget.checked)}
+				>
+					{m.microwave_only({}, { locale })}
+				</Checkbox>
+			{/if}
+			<Checkbox
+				checked={leftoversMode}
+				onchange={(event) => setLeftoversMode(event.currentTarget.checked)}
+			>
+				{m.leftovers_mode({}, { locale })}
+			</Checkbox>
+			<p class="muted">{m.weekend_prep({}, { locale })}: {totalPrepMinutes} min</p>
+			{#if cost}
+				<p class="muted">
+					{m.estimated_weekly_cost({}, { locale })}: {formatCurrencyMxn(cost.totalMxn, locale)}
+					{#if status}
+						· {status.over ? m.over_budget({}, { locale }) : m.under_budget({}, { locale })} {formatCurrencyMxn(Math.abs(status.deltaMxn), locale)}
+					{/if}
+				</p>
+			{/if}
+		</Card>
+
+		{#if fallbackCount > 0}
+			<Callout>
+				{m.constraints_tight({}, { locale })}
+			</Callout>
+		{/if}
+
 		{#if prepChecklist.length > 0}
-			<Card title="Weekend prep checklist">
+			<Card title={m.weekend_prep_checklist({}, { locale })}>
 				{#each prepChecklist as group (group.appliance)}
 					<section class="prep-group">
 						<h3>{group.label}</h3>
@@ -92,7 +151,7 @@
 									>
 										<span class="prep-main">
 											<span class="name">{item.name}</span>
-											<span class="muted">{item.cookedGrams.toLocaleString('en')} g cooked</span>
+											<span class="muted">{formatNumber(item.cookedGrams, 0, locale)} g {m.cooked({}, { locale })}</span>
 										</span>
 									</Checkbox>
 									<ul class="ingredients">
@@ -115,7 +174,7 @@
 		{/if}
 
 		{#each days as entry (entry.day)}
-			<Card title={`Day ${entry.day + 1}`}>
+			<Card title={`${m.day({}, { locale })} ${entry.day + 1}`}>
 				<ul>
 					{#each entry.meals as meal (meal.slotIndex)}
 						<MealRow
@@ -126,18 +185,18 @@
 						/>
 					{/each}
 				</ul>
-				<p class="muted">Day total: {entry.calories} kcal · {entry.protein} g protein</p>
+				<p class="muted">{m.day_total({}, { locale })}: {entry.calories} kcal · {entry.protein} g {m.protein({}, { locale }).toLowerCase()}</p>
 			</Card>
 		{/each}
 
 		{#if emergencyMeals.length > 0}
-			<Card title="Emergency meals">
-				<p class="muted emergency-intro">Keep these as backups for missed prep or a late workday.</p>
+			<Card title={m.emergency_meals({}, { locale })}>
+				<p class="muted emergency-intro">{m.emergency_intro({}, { locale })}</p>
 				<ul>
 					{#each emergencyMeals as entry (entry.meal.id)}
 						<MealRow
 							label={slotLabels[entry.meal.mealType]}
-							name={entry.meal.name}
+							name={localizedName(entry.meal, locale)}
 							calories={entry.nutrition.calories}
 							protein={entry.nutrition.protein}
 						/>
@@ -146,7 +205,7 @@
 			</Card>
 		{/if}
 	{:else}
-		<p class="muted">No plan yet — head to Home to generate one.</p>
+		<p class="muted">{m.no_plan_home({}, { locale })}</p>
 	{/if}
 </main>
 

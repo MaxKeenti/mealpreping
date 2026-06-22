@@ -1,6 +1,7 @@
-import { shoppingCategoryLabels, shoppingCategoryOrder, mealPrepData } from '$lib/data';
-import type { MealPrepData, ShoppingCategory, WeeklyPlan } from '$lib/data';
+import { localizedName, mealPrepData, shoppingCategoryLabel, shoppingCategoryOrder } from '$lib/data';
+import type { Locale, MealPrepData, ShoppingCategory, WeeklyPlan } from '$lib/data';
 import { combineFoodAmounts, formatFoodAmount, getFood, getMeal, nutritionForFood, rawFoodAmountsForMeal } from './units';
+import { costForGrams } from './cost';
 
 export interface ShoppingListItem {
 	foodId: string;
@@ -10,6 +11,7 @@ export interface ShoppingListItem {
 	friendlyAmount: string;
 	calories: number;
 	protein: number;
+	costMxn: number;
 }
 
 export interface ShoppingListGroup {
@@ -17,9 +19,14 @@ export interface ShoppingListGroup {
 	label: string;
 	items: ShoppingListItem[];
 	totalGrams: number;
+	totalMxn: number;
 }
 
-export function buildShoppingList(plan: WeeklyPlan, data: MealPrepData = mealPrepData): ShoppingListGroup[] {
+export function buildShoppingList(
+	plan: WeeklyPlan,
+	data: MealPrepData = mealPrepData,
+	locale: Locale = 'en'
+): ShoppingListGroup[] {
 	const amounts = combineFoodAmounts(
 		plan.meals.flatMap((plannedMeal) =>
 			rawFoodAmountsForMeal(data, getMeal(data, plannedMeal.mealId), plannedMeal.portionMultiplier)
@@ -32,12 +39,13 @@ export function buildShoppingList(plan: WeeklyPlan, data: MealPrepData = mealPre
 
 			return {
 				foodId: food.id,
-				name: food.name,
+				name: localizedName(food, locale),
 				category: food.shoppingCategory,
 				grams: Math.round(amount.grams),
-				friendlyAmount: formatFoodAmount(food, amount.grams),
+				friendlyAmount: formatFoodAmount(food, amount.grams, locale),
 				calories: Math.round(nutrition.calories),
-				protein: Math.round(nutrition.protein)
+				protein: Math.round(nutrition.protein),
+				costMxn: costForGrams(food, amount.grams)
 			};
 		})
 		.sort((left, right) => left.name.localeCompare(right.name));
@@ -47,9 +55,10 @@ export function buildShoppingList(plan: WeeklyPlan, data: MealPrepData = mealPre
 			const groupItems = items.filter((item) => item.category === category);
 			return {
 				category,
-				label: shoppingCategoryLabels[category],
+				label: shoppingCategoryLabel(category, locale),
 				items: groupItems,
-				totalGrams: groupItems.reduce((total, item) => total + item.grams, 0)
+				totalGrams: groupItems.reduce((total, item) => total + item.grams, 0),
+				totalMxn: groupItems.reduce((total, item) => total + item.costMxn, 0)
 			};
 		})
 		.filter((group) => group.items.length > 0);

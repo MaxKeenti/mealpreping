@@ -1,9 +1,10 @@
 import { browser } from '$app/environment';
-import type { UserProfile, WeeklyPlan } from '$lib/data';
+import { defaultProfile } from '$lib/data';
+import type { Locale, UserProfile, WeeklyPlan } from '$lib/data';
 import { clampPortionMultiplier, generateWeeklyPlan } from '$lib/logic';
 
 const STORAGE_KEY = 'mealpreping:state';
-const SCHEMA_VERSION = 1;
+const SCHEMA_VERSION = 2;
 
 /**
  * The single persisted blob (D17). `plan` already carries its generation `seed`,
@@ -16,10 +17,19 @@ export interface PersistedState {
 	profile: UserProfile | null;
 	plan: WeeklyPlan | null;
 	calorieBump: number;
+	microwaveOnly: boolean;
+	leftoversMode: boolean;
 }
 
 function emptyState(): PersistedState {
-	return { schemaVersion: SCHEMA_VERSION, profile: null, plan: null, calorieBump: 0 };
+	return {
+		schemaVersion: SCHEMA_VERSION,
+		profile: null,
+		plan: null,
+		calorieBump: 0,
+		microwaveOnly: false,
+		leftoversMode: false
+	};
 }
 
 /**
@@ -37,9 +47,11 @@ function migrate(raw: unknown): PersistedState {
 
 	return {
 		schemaVersion: SCHEMA_VERSION,
-		profile: state.profile ?? null,
-		plan: state.plan ?? null,
-		calorieBump: state.calorieBump ?? 0
+		profile: normalizeProfile(state.profile),
+		plan: normalizePlan(state.plan),
+		calorieBump: state.calorieBump ?? 0,
+		microwaveOnly: state.microwaveOnly ?? false,
+		leftoversMode: state.leftoversMode ?? false
 	};
 }
 
@@ -73,7 +85,9 @@ if (browser) {
 				schemaVersion: SCHEMA_VERSION,
 				profile: appState.profile,
 				plan: appState.plan,
-				calorieBump: appState.calorieBump
+				calorieBump: appState.calorieBump,
+				microwaveOnly: appState.microwaveOnly,
+				leftoversMode: appState.leftoversMode
 			};
 			localStorage.setItem(STORAGE_KEY, JSON.stringify(snapshot));
 		});
@@ -82,9 +96,12 @@ if (browser) {
 
 /** Onboarding result: save the profile and its first generated plan, land on Home. */
 export function completeOnboarding(profile: UserProfile): void {
-	appState.profile = profile;
+	const savedProfile = normalizeProfile(profile) ?? defaultProfile;
+	appState.profile = savedProfile;
 	appState.calorieBump = 0;
-	appState.plan = generateWeeklyPlan(profile, { calorieBump: 0 });
+	appState.microwaveOnly = false;
+	appState.leftoversMode = false;
+	appState.plan = generateWeeklyPlan(savedProfile, generateOptions(savedProfile, { calorieBump: 0 }));
 }
 
 /**
@@ -93,10 +110,12 @@ export function completeOnboarding(profile: UserProfile): void {
  * numbers rescale (mirrors `setPortionMultiplier`). With no plan yet, generate one.
  */
 export function updateProfile(profile: UserProfile): void {
-	appState.profile = profile;
-	appState.plan = generateWeeklyPlan(profile, {
+	const savedProfile = normalizeProfile(profile) ?? defaultProfile;
+	appState.profile = savedProfile;
+	appState.microwaveOnly = appState.microwaveOnly && savedProfile.weekdayAppliances.includes('microwave');
+	appState.plan = generateWeeklyPlan(savedProfile, {
 		seed: appState.plan?.seed,
-		calorieBump: appState.calorieBump
+		...generateOptions(savedProfile)
 	});
 }
 
@@ -105,6 +124,8 @@ export function resetAll(): void {
 	appState.profile = null;
 	appState.plan = null;
 	appState.calorieBump = 0;
+	appState.microwaveOnly = false;
+	appState.leftoversMode = false;
 }
 
 /** "Regenerate" — reshuffle with a fresh seed, keeping the current +kcal bump. */
@@ -115,7 +136,7 @@ export function regeneratePlan(): void {
 
 	appState.plan = generateWeeklyPlan(appState.profile, {
 		seed: Date.now(),
-		calorieBump: appState.calorieBump
+		...generateOptions(appState.profile)
 	});
 }
 
@@ -131,7 +152,7 @@ export function setPortionMultiplier(multiplier: number): void {
 	appState.profile.portionMultiplier = clampPortionMultiplier(multiplier);
 	appState.plan = generateWeeklyPlan(appState.profile, {
 		seed: appState.plan.seed,
-		calorieBump: appState.calorieBump
+		...generateOptions(appState.profile)
 	});
 }
 
@@ -144,6 +165,70 @@ export function setCalorieBump(bump: number): void {
 	appState.calorieBump = Math.max(0, bump);
 	appState.plan = generateWeeklyPlan(appState.profile, {
 		seed: appState.plan.seed,
-		calorieBump: appState.calorieBump
+		...generateOptions(appState.profile)
 	});
+}
+
+/** Restrict this week to microwave-compatible assembly, preserving the current seed. */
+export function setMicrowaveOnly(enabled: boolean): void {
+	if (!appState.profile || !appState.plan) {
+		return;
+	}
+
+	appState.microwaveOnly = enabled && appState.profile.weekdayAppliances.includes('microwave');
+	appState.plan = generateWeeklyPlan(appState.profile, {
+		seed: appState.plan.seed,
+		...generateOptions(appState.profile)
+	});
+}
+
+/** Cook once, eat twice for each slot in two-day blocks. */
+export function setLeftoversMode(enabled: boolean): void {
+	if (!appState.profile || !appState.plan) {
+		return;
+	}
+
+	appState.leftoversMode = enabled;
+	appState.plan = generateWeeklyPlan(appState.profile, {
+		seed: appState.plan.seed,
+		...generateOptions(appState.profile)
+	});
+}
+
+function generateOptions(profile: UserProfile, overrides: { calorieBump?: number } = {}) {
+	return {
+		calorieBump: overrides.calorieBump ?? appState.calorieBump,
+		dislikedFoodIds: profile.dislikedFoodIds,
+		maxPrepMinutes: profile.maxPrepMinutes,
+		microwaveOnly: appState.microwaveOnly,
+		leftoversMode: appState.leftoversMode
+	};
+}
+
+function normalizeProfile(profile: UserProfile | null | undefined): UserProfile | null {
+	if (!profile) {
+		return null;
+	}
+
+	const locale: Locale = profile.locale === 'es' ? 'es' : 'en';
+
+	return {
+		...defaultProfile,
+		...profile,
+		weekendAppliances: [...(profile.weekendAppliances ?? defaultProfile.weekendAppliances)],
+		weekdayAppliances: [...(profile.weekdayAppliances ?? defaultProfile.weekdayAppliances)],
+		dislikedFoodIds: [...(profile.dislikedFoodIds ?? [])],
+		locale
+	};
+}
+
+function normalizePlan(plan: WeeklyPlan | null | undefined): WeeklyPlan | null {
+	if (!plan) {
+		return null;
+	}
+
+	return {
+		...plan,
+		fallbacks: plan.fallbacks ?? []
+	};
 }

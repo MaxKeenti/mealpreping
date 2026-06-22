@@ -41,9 +41,12 @@ export interface HouseholdUnit {
 export interface FoodItem {
 	id: string;
 	name: string;
+	nameEs?: string;
 	category: FoodCategory;
 	shoppingCategory: ShoppingCategory;
 	costTier: CostTier;
+	pricePerKgMxn: number;
+	priceSource?: string;
 	caloriesPer100g: number;
 	proteinPer100g: number;
 	defaultServingGrams: number;
@@ -62,10 +65,12 @@ export interface PrepIngredient {
 export interface PrepComponent {
 	id: string;
 	name: string;
+	nameEs?: string;
 	ingredients: PrepIngredient[];
 	yieldFactor: number;
 	appliance: Appliance;
 	reheatsWell: boolean;
+	prepMinutes: number;
 	storageNotes?: string;
 }
 
@@ -77,6 +82,7 @@ export interface MealComponent {
 export interface Meal {
 	id: string;
 	name: string;
+	nameEs?: string;
 	mealType: MealType;
 	components: MealComponent[];
 	weekdayAppliances: Appliance[];
@@ -90,7 +96,7 @@ export type Goal = 'gain' | 'maintain' | 'cut';
 export type Appetite = 'low' | 'medium' | 'high' | 'insatiable';
 export type ActivityLevel = 'low' | 'moderate' | 'high';
 export type BudgetDial = 'tight' | 'normal' | 'comfortable';
-export type Locale = 'en';
+export type Locale = 'en' | 'es';
 
 export interface UserProfile {
 	heightCm: number;
@@ -105,6 +111,8 @@ export interface UserProfile {
 	portionMultiplier: number;
 	budgetDial: BudgetDial;
 	weeklyBudgetMxn?: number;
+	dislikedFoodIds: string[];
+	maxPrepMinutes?: number;
 	locale: Locale;
 }
 
@@ -123,6 +131,14 @@ export interface PlannedMeal {
 	portionMultiplier: number;
 	calories: number;
 	protein: number;
+	isFallback?: boolean;
+}
+
+export interface PlanFallback {
+	day: number;
+	slot: MealType;
+	slotIndex: number;
+	reason: string;
 }
 
 export interface WeeklyPlan {
@@ -131,6 +147,7 @@ export interface WeeklyPlan {
 	prepSet: string[];
 	meals: PlannedMeal[];
 	targets: NutritionTargets;
+	fallbacks: PlanFallback[];
 }
 
 export interface AppState {

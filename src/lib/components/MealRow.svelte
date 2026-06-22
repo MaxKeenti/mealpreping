@@ -4,16 +4,17 @@
 		name: string;
 		calories: number;
 		protein: number;
+		gramsLabel?: string;
 	}
 
-	let { label, name, calories, protein }: Props = $props();
+	let { label, name, calories, protein, gramsLabel = 'g' }: Props = $props();
 </script>
 
 <li class="meal">
 	<span class="name">
 		<strong>{label}</strong> — {name}
 	</span>
-	<span class="muted facts">{calories} kcal · {protein} g</span>
+	<span class="muted facts">{calories} kcal · {protein} {gramsLabel}</span>
 </li>
 
 <style>

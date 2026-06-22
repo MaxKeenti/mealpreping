@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import { defaultProfile, mealPrepData } from '$lib/data';
-import { canAssembleMeal, generateWeeklyPlan, requiredPrepIds, slotsForProfile } from './generator';
-import { getMeal } from './units';
+import {
+	canAssembleMeal,
+	generateWeeklyPlan,
+	mealUsesFood,
+	prepSetMinutes,
+	requiredPrepIds,
+	selectPrepSet,
+	slotsForProfile
+} from './generator';
+import { getMeal, nutritionForMeal } from './units';
 
 describe('generateWeeklyPlan', () => {
 	it('builds a seven-day plan with three meals and two snacks per day', () => {
@@ -83,5 +91,85 @@ describe('generateWeeklyPlan', () => {
 		const missingPrepIds = [...usedPrepIds].filter((prepId) => !plan.prepSet.includes(prepId));
 
 		expect(missingPrepIds).toEqual([]);
+	});
+
+	it('excludes disliked foods from meals and prep components', () => {
+		const plan = generateWeeklyPlan(defaultProfile, {
+			seed: 77,
+			generatedAt: '2026-06-13T00:00:00.000Z',
+			dislikedFoodIds: ['chicken-thigh']
+		});
+		const mealsWithChicken = plan.meals
+			.map((plannedMeal) => getMeal(mealPrepData, plannedMeal.mealId))
+			.filter((meal) => mealUsesFood(mealPrepData, meal, 'chicken-thigh'));
+
+		expect(plan.prepSet).not.toContain('roasted-chicken');
+		expect(mealsWithChicken).toEqual([]);
+	});
+
+	it('can explicitly restrict weekday assembly to microwave meals', () => {
+		const plan = generateWeeklyPlan(defaultProfile, {
+			seed: 101,
+			generatedAt: '2026-06-13T00:00:00.000Z',
+			microwaveOnly: true
+		});
+		const invalidMeals = plan.meals
+			.map((plannedMeal) => getMeal(mealPrepData, plannedMeal.mealId))
+			.filter((meal) => !canAssembleMeal(defaultProfile, meal, plan.prepSet, { weekdayAppliances: ['microwave'] }));
+
+		expect(invalidMeals).toEqual([]);
+	});
+
+	it('leftovers mode reduces the number of distinct meal templates', () => {
+		const normalPlan = generateWeeklyPlan(defaultProfile, {
+			seed: 202,
+			generatedAt: '2026-06-13T00:00:00.000Z'
+		});
+		const leftoversPlan = generateWeeklyPlan(defaultProfile, {
+			seed: 202,
+			generatedAt: '2026-06-13T00:00:00.000Z',
+			leftoversMode: true
+		});
+
+		expect(new Set(leftoversPlan.meals.map((meal) => meal.mealId)).size).toBeLessThan(
+			new Set(normalPlan.meals.map((meal) => meal.mealId)).size
+		);
+	});
+
+	it('trims prep set to the requested prep-time limit', () => {
+		const prepSet = selectPrepSet(defaultProfile, mealPrepData, { maxPrepMinutes: 60 });
+
+		expect(prepSetMinutes(prepSet, mealPrepData)).toBeLessThanOrEqual(60);
+	});
+
+	it('degrades tight constraints without throwing', () => {
+		const plan = generateWeeklyPlan(defaultProfile, {
+			seed: 303,
+			generatedAt: '2026-06-13T00:00:00.000Z',
+			maxPrepMinutes: 0,
+			microwaveOnly: true,
+			dislikedFoodIds: ['oats', 'whole-milk', 'banana', 'peanut-butter']
+		});
+
+		expect(plan.meals.length).toBeGreaterThan(0);
+		expect(plan.fallbacks.length).toBeGreaterThan(0);
+	});
+
+	it('weights snack choices at selection time based on appetite', () => {
+		const lowProfile = { ...defaultProfile, appetite: 'low' as const, goal: 'cut' as const };
+		const highProfile = { ...defaultProfile, appetite: 'insatiable' as const, goal: 'gain' as const };
+		const averageSnackCalories = (profile: typeof defaultProfile) => {
+			const meals = Array.from({ length: 12 }, (_, index) =>
+				generateWeeklyPlan(profile, {
+					seed: index + 1,
+					generatedAt: '2026-06-13T00:00:00.000Z'
+				})
+			).flatMap((plan) => plan.meals.filter((meal) => meal.slot === 'snack'));
+			const calories = meals.map((meal) => nutritionForMeal(mealPrepData, getMeal(mealPrepData, meal.mealId)).calories);
+
+			return calories.reduce((total, value) => total + value, 0) / calories.length;
+		};
+
+		expect(averageSnackCalories(highProfile)).toBeGreaterThan(averageSnackCalories(lowProfile));
 	});
 });
